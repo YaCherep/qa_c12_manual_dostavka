@@ -51,15 +51,6 @@ class TestCourierClient:
         assert validated.id == result["id"]
         
 
-
-    def test_delete_then_get_returns_404(self, client):
-        new_courier_data = {"first_name": "Виктория", "last_name": "Морозова", "type": "foot"}
-        created = client.create_courier(new_courier_data)
-        courier_id = created["id"]
-        client.delete_courier(courier_id)
-        with pytest.raises(requests.exceptions.HTTPError):
-            client.get_courier_by_id(courier_id) 
-
     def test_update_courier(self, client):
         """Обновляет курьера и проверяет изменение имени."""
         new_courier_data = {"first_name": "Алексей", "last_name": "Петров", "type": "foot"}
@@ -76,7 +67,7 @@ class TestCourierClient:
         with pytest.raises(requests.exceptions.HTTPError):
             client.get_courier_by_id(99999)
 
-    def test_delete_then_get_returns_404(self, client):
+    def test_delete_and_verify_404_after_delete(self, client):
         new_courier_data = {"first_name": "Анна", "last_name": "Смирнова", "type": "foot"}
         created = client.create_courier(new_courier_data)
         courier_id = created["id"]
@@ -92,7 +83,7 @@ class TestCourierClient:
         with pytest.raises(requests.exceptions.HTTPError):
             client.update_courier(nonexistent_id, update_data) 
 
-    def test_get_nonexistent_courier(self, client):
-        nonexistent_id = 99999
+    def test_create_courier_without_required_field_raises(self, client):
+        invalid_data = {"last_name": "Сидорова", "phone": "+79997654321"}  # нет first_name
         with pytest.raises(requests.exceptions.HTTPError):
-            client.get_courier_by_id(nonexistent_id) 
+            client.create_courier(invalid_data)  
