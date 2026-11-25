@@ -24,7 +24,7 @@ class CourierAPIClient:
         headers["Content-Type"] = "application/json"
         response = requests.post(url, headers=headers, json=data)
         response.raise_for_status()
-        return response.json()
+        return response.json() 
 
     def delete_courier(self, courier_id: int):
         url = f"{self.base_url}/couriers/{courier_id}"
@@ -32,3 +32,12 @@ class CourierAPIClient:
         response = requests.delete(url, headers=headers)
         response.raise_for_status()
         return response.json()
+       
+    def update_courier(self, courier_id: int, data: dict):
+        url = f"{self.base_url}/couriers/{courier_id}"
+        headers = self._get_auth_header()
+        headers["Content-Type"] = "application/json"
+        response = requests.patch(url, headers=headers, json=data)
+        response.raise_for_status()
+        return response.json() 
+    

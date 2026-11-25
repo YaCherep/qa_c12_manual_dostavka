@@ -4,6 +4,7 @@ import os
 
 import pytest
 import requests
+from models import CourierModel 
 from dotenv import load_dotenv
 
 from api_client import CourierAPIClient
@@ -11,7 +12,7 @@ from api_client import CourierAPIClient
 load_dotenv()
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def client():
     """Создаёт клиент API для каждого теста."""
     base_url = os.getenv("API_BASE_URL", "http://127.0.0.1:5001/api")
@@ -42,21 +43,56 @@ class TestCourierClient:
         )
 
     def test_create_courier(self, client, new_courier_data):
-        """Создаёт курьера с переданными данными."""
         result = client.create_courier(new_courier_data)
-        assert "id" in result, "Убедитесь, что у созданного курьера есть id."
-        assert result["first_name"] == new_courier_data["first_name"], (
-            "Убедитесь, что имя созданного курьера совпадает с переданным."
-        )
+        validated = CourierModel(**result)  # валидация структуры
+
+        assert "id" in result
+        assert result["first_name"] == new_courier_data["first_name"]
+        assert validated.id == result["id"]
+        
+
+
+    def test_delete_then_get_returns_404(self, client):
+        new_courier_data = {"first_name": "Виктория", "last_name": "Морозова", "type": "foot"}
+        created = client.create_courier(new_courier_data)
+        courier_id = created["id"]
+        client.delete_courier(courier_id)
+        with pytest.raises(requests.exceptions.HTTPError):
+            client.get_courier_by_id(courier_id) 
+
+    def test_update_courier(self, client):
+        """Обновляет курьера и проверяет изменение имени."""
+        new_courier_data = {"first_name": "Алексей", "last_name": "Петров", "type": "foot"}
+        created = client.create_courier(new_courier_data)
+        courier_id = created["id"]
+
+        updated_data = {"first_name": "Дмитрий"}
+        updated = client.update_courier(courier_id, updated_data)
+
+        assert updated["first_name"] == "Дмитрий"
 
     def test_get_nonexistent_courier_raises(self, client):
         """Ожидает HTTPError при запросе несуществующего курьера."""
         with pytest.raises(requests.exceptions.HTTPError):
             client.get_courier_by_id(99999)
 
-    def test_delete_courier(self, client):
-        """Удаляет курьера, который уже есть на сервере."""
-        result = client.delete_courier(2)
-        assert result == {"status": "deleted"}, (
-            "Убедитесь, что API подтвердил удаление курьера."
-        )
+    def test_delete_then_get_returns_404(self, client):
+        new_courier_data = {"first_name": "Анна", "last_name": "Смирнова", "type": "foot"}
+        created = client.create_courier(new_courier_data)
+        courier_id = created["id"]
+
+        client.delete_courier(courier_id)
+
+        with pytest.raises(requests.exceptions.HTTPError):
+            client.get_courier_by_id(courier_id) 
+
+    def test_update_nonexistent_courier(self, client):
+        nonexistent_id = 99999
+        update_data = {"first_name": "НовыйИмя"}
+        with pytest.raises(requests.exceptions.HTTPError):
+            client.update_courier(nonexistent_id, update_data) 
+
+    def test_get_nonexistent_courier(self, client):
+        nonexistent_id = 99999
+        with pytest.raises(requests.exceptions.HTTPError):
+            client.get_courier_by_id(nonexistent_id) 
