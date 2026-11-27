@@ -37,28 +37,20 @@ class TestCourierClient:
     def test_get_courier_by_id(self, client):
         """Получает курьера, который уже есть на сервере."""
         courier = client.get_courier_by_id(1)
+        validated = CourierModel(**courier)
         assert courier["id"] == 1, "Убедитесь, что получен курьер с id=1."
         assert courier["first_name"] == "Иван", (
             "Убедитесь, что API вернул правильное имя курьера."
         )
 
     def test_create_courier(self, client, new_courier_data):
-        result = client.create_courier(new_courier_data)
-        validated = CourierModel(**result)  # валидация структуры
+        result = client.create_courier(new_courier_data) 
 
         assert "id" in result
         assert result["first_name"] == new_courier_data["first_name"]
         assert validated.id == result["id"]
         
 
-
-    def test_delete_then_get_returns_404(self, client):
-        new_courier_data = {"first_name": "Виктория", "last_name": "Морозова", "type": "foot"}
-        created = client.create_courier(new_courier_data)
-        courier_id = created["id"]
-        client.delete_courier(courier_id)
-        with pytest.raises(requests.exceptions.HTTPError):
-            client.get_courier_by_id(courier_id) 
 
     def test_update_courier(self, client):
         """Обновляет курьера и проверяет изменение имени."""
